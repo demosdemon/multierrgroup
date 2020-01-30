@@ -1,14 +1,15 @@
 package multierrgroup
 
 import (
-	"github.com/hashicorp/go-multierror"
 	"sync"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type Group struct {
 	wg  sync.WaitGroup
 	mu  sync.Mutex
-	err multierror.Error
+	err *multierror.Error
 }
 
 func (g *Group) Wait() error {
@@ -24,7 +25,7 @@ func (g *Group) Go(fn func() error) {
 
 		if err := fn(); err != nil {
 			g.mu.Lock()
-			g.err.Errors = append(g.err.Errors, err)
+			g.err = multierror.Append(g.err, err)
 			g.mu.Unlock()
 		}
 	}()
