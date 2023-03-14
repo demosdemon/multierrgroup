@@ -4,18 +4,17 @@ import (
 	"sync"
 
 	"github.com/demosdemon/cpanic"
-	"github.com/hashicorp/go-multierror"
 )
 
 type Group struct {
 	wg  sync.WaitGroup
 	mu  sync.Mutex
-	err *multierror.Error
+	err manyErrors
 }
 
 func (g *Group) Wait() error {
 	g.wg.Wait()
-	return g.err.ErrorOrNil()
+	return g.err.done()
 }
 
 func (g *Group) AddError(err error) {
@@ -24,7 +23,7 @@ func (g *Group) AddError(err error) {
 	}
 
 	g.mu.Lock()
-	g.err = multierror.Append(g.err, err)
+	g.err.add(err)
 	g.mu.Unlock()
 }
 

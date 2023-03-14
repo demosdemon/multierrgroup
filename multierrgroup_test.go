@@ -6,7 +6,6 @@ import (
 
 	"github.com/demosdemon/cpanic"
 	"github.com/demosdemon/multierrgroup"
-	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,17 +54,16 @@ func TestWait(t *testing.T) {
 	err := g.Wait()
 	assert.NotNil(t, err)
 
-	merr, ok := err.(*multierror.Error)
-	assert.True(t, ok)
-	assert.Len(t, merr.Errors, 2)
+	merr := unwrap(err)
+	assert.Len(t, merr, 2)
 
-	stringErrors := make([]string, len(merr.Errors))
-	for i, err := range merr.Errors {
+	stringErrors := make([]string, len(merr))
+	for i, err := range merr {
 		stringErrors[i] = err.Error()
 	}
 
 	assert.EqualValues(t, []string{"error", "panic: oh noes"}, stringErrors)
 
-	_, ok = merr.Errors[1].(*cpanic.Panic)
+	_, ok := merr[1].(*cpanic.Panic)
 	assert.True(t, ok)
 }
