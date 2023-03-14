@@ -22,7 +22,3 @@ func (e *manyErrors) done() error {
 
 	return errors.Join((*e)...)
 }
-
-func (e *manyErrors) WrappedErrors() []error {
-	return *e
-}
