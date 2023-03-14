@@ -20,7 +20,7 @@ func TestWait(t *testing.T) {
 	})
 
 	g.Go(func() error {
-		time.Sleep(15 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 		return errors.New("error")
 	})
 
@@ -35,9 +35,14 @@ func TestWait(t *testing.T) {
 	merr, ok := err.(*multierror.Error)
 	assert.True(t, ok)
 	assert.Len(t, merr.Errors, 2)
-	assert.Equal(t, "error", merr.Errors[1].Error())
 
-	p, ok := merr.Errors[0].(*cpanic.Panic)
+	stringErrors := make([]string, len(merr.Errors))
+	for i, err := range merr.Errors {
+		stringErrors[i] = err.Error()
+	}
+
+	assert.EqualValues(t, []string{"panic: oh noes", "error"}, stringErrors)
+
+	_, ok = merr.Errors[0].(*cpanic.Panic)
 	assert.True(t, ok)
-	assert.Equal(t, "panic: oh noes", p.Error())
 }
