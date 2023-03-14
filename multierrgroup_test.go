@@ -15,12 +15,12 @@ func TestWait(t *testing.T) {
 	var g multierrgroup.Group
 
 	g.Go(func() error {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 		return nil
 	})
 
 	g.Go(func() error {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(15 * time.Millisecond)
 		return errors.New("error")
 	})
 
@@ -35,9 +35,9 @@ func TestWait(t *testing.T) {
 	merr, ok := err.(*multierror.Error)
 	assert.True(t, ok)
 	assert.Len(t, merr.Errors, 2)
-	assert.Equal(t, "error", merr.Errors[0].Error())
+	assert.Equal(t, "error", merr.Errors[1].Error())
 
-	p, ok := merr.Errors[1].(*cpanic.Panic)
+	p, ok := merr.Errors[0].(*cpanic.Panic)
 	assert.True(t, ok)
 	assert.Equal(t, "panic: oh noes", p.Error())
 }
