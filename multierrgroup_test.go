@@ -3,7 +3,6 @@ package multierrgroup_test
 import (
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/demosdemon/cpanic"
 	"github.com/demosdemon/multierrgroup"
@@ -14,21 +13,45 @@ import (
 func TestWait(t *testing.T) {
 	var g multierrgroup.Group
 
+	ch1 := make(chan func())
+	ch2 := make(chan func())
+	ch3 := make(chan func())
+	ch4 := make(chan struct{})
+
 	g.Go(func() error {
-		time.Sleep(5 * time.Millisecond)
+		f := <-ch1
+		defer f()
 		return nil
 	})
 
 	g.Go(func() error {
-		time.Sleep(30 * time.Millisecond)
+		f := <-ch2
+		defer f()
 		return errors.New("error")
 	})
 
 	g.Go(func() error {
-		time.Sleep(10 * time.Millisecond)
+		f := <-ch3
+		defer f()
 		panic("oh noes")
 	})
 
+	ch1 <- func() {
+		t.Log("ch1")
+		close(ch1)
+		ch2 <- func() {
+			t.Log("ch2")
+			close(ch2)
+			ch3 <- func() {
+				t.Log("ch3")
+				close(ch3)
+				close(ch4)
+			}
+		}
+	}
+
+	<-ch4
+	t.Log("ch4")
 	err := g.Wait()
 	assert.NotNil(t, err)
 
@@ -41,8 +64,8 @@ func TestWait(t *testing.T) {
 		stringErrors[i] = err.Error()
 	}
 
-	assert.EqualValues(t, []string{"panic: oh noes", "error"}, stringErrors)
+	assert.EqualValues(t, []string{"error", "panic: oh noes"}, stringErrors)
 
-	_, ok = merr.Errors[0].(*cpanic.Panic)
+	_, ok = merr.Errors[1].(*cpanic.Panic)
 	assert.True(t, ok)
 }
